@@ -1,0 +1,13 @@
+Kullanıcı tanımlama ve bilgi düzenleme ekranının bir yere taşınması gerekiyor.
+
+Personel Geçiş Kontrol Modülü
+Departman yönetimi ekranında alt eklemeye sınır getirilebilir.
+Departman yönetimi ekranında departman pasif iken düzenlenebiliyor --> Yeniden görüş alınacak
+Departman yönetimi ekranında departman pasif iken alt eklenebilir.
+
+Departman Personel Taşımanın excel export edildiğinde durum sütununda evet hayır yerine aktif pasif yer almalı.
+ 
+Kart yönetiminde geçici kart ve kalıcı kart kısımları ayrıştırılabilir. (Geçici kart menüsünü açtığımız her kullanıcıya sadece görüntüleme gibi yetkilendirme yapılabilir)
+
+
+

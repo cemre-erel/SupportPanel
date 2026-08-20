@@ -1,0 +1,147 @@
+@model List<SupportPanel.ViewModels.ProductCountReportViewModel>
+
+@{
+    ViewData["Title"] = "Ürün Talep Özeti";
+    var categories = ViewBag.Categories as List<string> ?? new List<string>();
+    var tenants = ViewBag.Tenants as List<string> ?? new List<string>();
+    var slaLevels = ViewBag.SlaLevels as List<string> ?? new List<string>();
+
+    var selectedCategory = ViewBag.SelectedCategory as string;
+    var selectedTenant = ViewBag.SelectedTenant as string;
+    var selectedSlaLevel = ViewBag.SelectedSlaLevel as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Ürün Talep Özeti</h2>
+    <a asp-action="Index" class="btn btn-light">Geri Dön</a>
+</div>
+
+<form method="get" class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label for="categoryFilter" class="form-label">Kategori</label>
+                <select id="categoryFilter" name="category" class="form-select">
+                    <option value="">Tüm kategoriler</option>
+                    @foreach (var item in categories)
+                    {
+                        <option value="@item" selected="@(selectedCategory == item)">@item</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="tenantFilter" class="form-label">Firma</label>
+                <select id="tenantFilter" name="tenant" class="form-select">
+                    <option value="">Tüm firmalar</option>
+                    @foreach (var item in tenants)
+                    {
+                        <option value="@item" selected="@(selectedTenant == item)">@item</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="slaLevelFilter" class="form-label">SLA Seviyesi</label>
+                <select id="slaLevelFilter" name="slaLevel" class="form-select">
+                    <option value="">Tüm SLA seviyeleri</option>
+                    @foreach (var item in slaLevels)
+                    {
+                        <option value="@item" selected="@(selectedSlaLevel == item)">@item</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary">Filtrele</button>
+                <a asp-action="ProductCounts" class="btn btn-outline-secondary">Temizle</a>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="card">
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="mb-3">
+                <label for="productSearch" class="form-label">Ürün Ara</label>
+                <input id="productSearch"
+                       type="search"
+                       class="form-control"
+                       placeholder="Ürün adı ara..."
+                       autocomplete="off" />
+            </div>
+            <div class="table-responsive">
+                <table id="productCountsTable" class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ürün</th>
+                            <th>Toplam Talep</th>
+                            <th>Açık Talep</th>
+                            <th>Tamamlanmış</th>
+                            <th>Atanmış</th>
+                            <th>Atanmamış</th>
+                            <th>SLA İhlali</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr data-product-name="@item.ProductName">
+                                <td class="fw-semibold">@item.ProductName</td>
+                                <td>
+                                    <a asp-controller="Reports"
+                                       asp-action="Index"
+                                       asp-route-product="@item.ProductName"
+                                       asp-route-category="@selectedCategory">
+                                        @item.TotalCount
+                                    </a>
+                                </td>
+                                <td>@item.OpenCount</td>
+                                <td>@item.CompletedCount</td>
+                                <td>@item.AssignedCount</td>
+                                <td>@item.UnassignedCount</td>
+                                <td class="@(item.SlaBreachedCount > 0 ? "text-danger fw-semibold" : "")">@item.SlaBreachedCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p id="productSearchEmpty" class="text-muted text-center py-4 mb-0 d-none">
+                Aramanızla eşleşen ürün bulunamadı.
+            </p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">Raporlanacak ürün bulunmuyor.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const searchInput = document.getElementById('productSearch');
+            const table = document.getElementById('productCountsTable');
+            const emptyMessage = document.getElementById('productSearchEmpty');
+
+            if (!searchInput || !table || !emptyMessage) return;
+
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.trim().toLocaleLowerCase('tr-TR');
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    const productName = row.dataset.productName ?? '';
+                    const visible = productName.toLocaleLowerCase('tr-TR').includes(term);
+                    row.classList.toggle('d-none', !visible);
+                    if (visible) visibleCount++;
+                });
+
+                table.classList.toggle('d-none', visibleCount === 0);
+                emptyMessage.classList.toggle('d-none', visibleCount !== 0);
+            });
+        })();
+    </script>
+}

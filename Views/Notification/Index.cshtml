@@ -1,0 +1,88 @@
+@model List<SupportPanel.Models.Notification>
+@using SupportPanel.Constants
+@{
+    ViewData["Title"] = "Bildirimler";
+    var ticketTitles = ViewBag.TicketTitles as Dictionary<int, string> ?? new Dictionary<int, string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Bildirimler</h2>
+    <div class="d-flex align-items-center gap-2">
+        @if (User.IsInRole(RoleNames.SystemAdmin))
+        {
+            <a asp-controller="Notification" asp-action="Create" class="btn btn-success">Yeni Bildirim</a>
+        }
+        @if (Model.Any(n => !n.IsRead))
+        {
+            <form asp-action="MarkAllRead" method="post" class="d-inline">
+                <button type="submit" class="btn btn-primary">Tümünü Okundu İşaretle</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Mesaj</th>
+                    <th>Talep</th>
+                    <th>Tarih</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr class="@(item.IsRead ? "" : "fw-bold bg-light")">
+                        <td>@item.Message</td>
+                        <td>
+                            @if (item.TicketId.HasValue)
+                            {
+                                var title = ticketTitles.TryGetValue(item.TicketId.Value, out var t) ? t : "Talep";
+                                <a asp-controller="Ticket"
+                                   asp-action="Details"
+                                   asp-route-id="@item.TicketId.Value"
+                                   class="fw-semibold text-decoration-none">
+                                    @title
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                        <td>@item.CreatedDate.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>
+                            @if (item.IsRead)
+                            {
+                                <span class="badge bg-secondary">Okundu</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-primary">Okunmadı</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!item.IsRead)
+                            {
+                                <form asp-action="MarkRead" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Okundu İşaretle</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        Henüz bildiriminiz yok.
+    </div>
+}

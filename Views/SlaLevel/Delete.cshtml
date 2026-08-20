@@ -1,0 +1,30 @@
+@model SupportPanel.Models.SlaLevel
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="page-title mb-0">SLA Seviyesi Sil</h2>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            Bu SLA seviyesini silmek istediğinize emin misiniz?
+        </div>
+        <dl class="row">
+            <dt class="col-sm-2">Firma</dt>
+            <dd class="col-sm-10">@Model.Tenant?.CompanyName</dd>
+            <dt class="col-sm-2">Seviye Adı</dt>
+            <dd class="col-sm-10">@Model.Name</dd>
+            <dt class="col-sm-2">Aktif</dt>
+            <dd class="col-sm-10">@(Model.IsActive ? "Aktif" : "Pasif")</dd>
+        </dl>
+    </div>
+    <div class="card-footer">
+        <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post" class="d-inline" novalidate>
+            <button type="submit" class="btn btn-danger">Sil</button>
+        </form>
+        <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

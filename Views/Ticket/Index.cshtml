@@ -1,0 +1,470 @@
+﻿@model List<SupportPanel.Models.Ticket>
+
+@using SupportPanel.Constants
+@{
+    ViewData["Title"] ??=
+        User.IsInRole(RoleNames.CompanyManager) || User.IsInRole(RoleNames.CompanyUser)
+            ? "Taleplerim"
+            : "Talep Listesi";
+    var slaItems = ViewBag.TicketSlaItems as Dictionary<int, TicketSlaListItemViewModel>
+        ?? new Dictionary<int, TicketSlaListItemViewModel>();
+    var returnTo = ViewData["ReturnToCompanyTickets"] as bool? == true
+        ? "company-tickets"
+        : ViewData["ReturnToSupportPool"] as bool? == true
+            ? "support-pool"
+            : ViewData["ReturnToMyTickets"] as bool? == true
+                ? "assigned-tickets"
+                : null;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">@ViewData["Title"]</h2>
+    @if (ViewData["ShowCreateButton"] as bool? != false &&
+     (User.IsInRole(RoleNames.CompanyManager) ||
+      User.IsInRole(RoleNames.CompanyUser)))
+    {
+    <a asp-action="Create" class="btn btn-primary">
+        Yeni Talep
+    </a>
+    }
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h6 class="text-muted small fw-semibold mb-3">Filtrele</h6>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="ticketSearch">Ara</label>
+                <input type="text" id="ticketSearch" class="form-control" placeholder="Başlık ara...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketStatusFilter">Durum</label>
+                <select id="ticketStatusFilter" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="New">Yeni</option>
+                    <option value="SupportQueue">Destek Havuzunda</option>
+                    <option value="Assigned">Atandı</option>
+                    <option value="InReview">İnceleniyor</option>
+                    <option value="WaitingCustomer">Müşteri Bekleniyor</option>
+                    <option value="Resolved">Çözüldü</option>
+                    <option value="Closed">Kapatıldı</option>
+                    <option value="Cancelled">İptal Edildi</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketPriorityFilter">Öncelik</label>
+                <select id="ticketPriorityFilter" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="Low">Düşük</option>
+                    <option value="Medium">Orta</option>
+                    <option value="High">Yüksek</option>
+                    <option value="Critical">Kritik</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketCategoryFilter">Kategori</label>
+                <select id="ticketCategoryFilter" class="form-select">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketProductFilter">Ürün</label>
+                <select id="ticketProductFilter" class="form-select">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketTenantFilter">Firma</label>
+                <select id="ticketTenantFilter" class="form-select">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketSlaLevelFilter">SLA Seviyesi</label>
+                <select id="ticketSlaLevelFilter" class="form-select">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="ticketSlaStateFilter">SLA Durumu</label>
+                <select id="ticketSlaStateFilter" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="active">Süresi devam eden</option>
+                    <option value="warning">Kritik seviyeye yaklaşan</option>
+                    <option value="breached">SLA ihlali olan</option>
+                    <option value="completed">Tamamlanan / durdurulan</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label" for="ticketCreatedFromFilter">Açılış Tarihi (Başlangıç)</label>
+                <input type="date" id="ticketCreatedFromFilter" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="ticketCreatedToFilter">Açılış Tarihi (Bitiş)</label>
+                <input type="date" id="ticketCreatedToFilter" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <button type="button" id="clearTicketFilters" class="btn btn-outline-secondary" style="width: 100px;">
+                    Temizle
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small mb-3">
+    <span id="ticketCount">0 kayıt gösteriliyor (Toplam: 0)</span>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Başlık</th>
+                <th>Firma</th>
+                <th>Ürün</th>
+                <th>Kategori</th>
+                <th>Atanan</th>
+                <th>Öncelik</th>
+                <th>SLA</th>
+                <th>Durum</th>
+                <th>Oluşturulma</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+
+        <tbody id="ticketTableBody">
+            @foreach (var item in Model)
+            {
+                slaItems.TryGetValue(item.Id, out var slaItem);
+                <tr data-title="@(item.Title ?? "").ToLower()"
+                    data-tenant="@item.Tenant?.CompanyName"
+                    data-product="@item.Product?.Name"
+                    data-category="@item.Category?.Name"
+                    data-status="@item.Status"
+                    data-priority="@item.Priority"
+                    data-sla-level="@(slaItem?.LevelName ?? item.SlaLevel?.Name ?? "")"
+                    data-sla-state="@(slaItem?.State ?? "")"
+                    data-created="@item.CreatedDate.ToString("yyyy-MM-dd")">
+                    <td>
+                        <a asp-action="Details"
+                           asp-route-id="@item.Id"
+                           asp-route-returnTo="@returnTo"
+                           class="fw-semibold text-decoration-none">
+                            @item.Title
+                        </a>
+                    </td>
+                    <td>@item.Tenant?.CompanyName</td>
+                    <td>@item.Product?.Name</td>
+                    <td>@item.Category?.Name</td>
+                    <td>@($"{item.AssignedUser?.FirstName} {item.AssignedUser?.LastName}")</td>
+                    <td>
+                        @await Html.PartialAsync("_PriorityBadge", item.Priority)
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark mb-1">@item.SlaLevel?.Name</span>
+                        @if (slaItem != null)
+                        {
+                            <div class="small fw-semibold @slaItem.CssClass">@slaItem.Summary</div>
+                            <div class="small @slaItem.CssClass" title="İlk müdahale: @slaItem.ResponseText">
+                                Çözüm: @slaItem.ResolutionText
+                            </div>
+                        }
+                    </td>
+                    <td>
+                        @await Html.PartialAsync("_StatusBadge", item.Status)
+                    </td>
+                    <td>@item.CreatedDate.ToString("dd.MM.yyyy HH:mm")</td>
+
+                    <td>
+                        <a asp-action="Details"
+                           asp-route-id="@item.Id"
+                           asp-route-returnTo="@returnTo"
+                           class="btn btn-info btn-sm">
+                            Detay
+                        </a>
+
+                        @if (User.IsInRole(RoleNames.SystemAdmin) ||
+                             (User.IsInRole(RoleNames.CompanyManager) && item.Status == TicketStatus.New))
+                        {
+                            <a asp-action="Edit"
+                               asp-route-id="@item.Id"
+                               asp-route-returnTo="@returnTo"
+                               class="btn btn-warning btn-sm">
+                                Düzenle
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div id="ticketEmptyState" class="alert alert-info border-0 bg-white text-center d-none">
+    Kayıt bulunamadı.
+</div>
+
+<div id="ticketPagination" class="d-flex align-items-center gap-1 flex-wrap"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var tbody = document.getElementById("ticketTableBody");
+        var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+        var searchInput = document.getElementById("ticketSearch");
+        var statusFilter = document.getElementById("ticketStatusFilter");
+        var priorityFilter = document.getElementById("ticketPriorityFilter");
+        var categoryFilter = document.getElementById("ticketCategoryFilter");
+        var productFilter = document.getElementById("ticketProductFilter");
+        var tenantFilter = document.getElementById("ticketTenantFilter");
+        var slaLevelFilter = document.getElementById("ticketSlaLevelFilter");
+        var slaStateFilter = document.getElementById("ticketSlaStateFilter");
+        var createdFromFilter = document.getElementById("ticketCreatedFromFilter");
+        var createdToFilter = document.getElementById("ticketCreatedToFilter");
+        var clearFiltersButton = document.getElementById("clearTicketFilters");
+        var countSpan = document.getElementById("ticketCount");
+        var pagination = document.getElementById("ticketPagination");
+        var emptyState = document.getElementById("ticketEmptyState");
+        var pageSize = 10;
+        var currentPage = 1;
+
+        var categories = [];
+        var products = [];
+        var tenants = [];
+        var slaLevels = [];
+        rows.forEach(function (row) {
+            var cat = row.getAttribute("data-category") || "";
+            var product = row.getAttribute("data-product") || "";
+            var ten = row.getAttribute("data-tenant") || "";
+            var slaLevel = row.getAttribute("data-sla-level") || "";
+            if (product && products.indexOf(product) === -1) {
+                products.push(product);
+            }
+            if (cat && categories.indexOf(cat) === -1) {
+                categories.push(cat);
+            }
+            if (ten && tenants.indexOf(ten) === -1) {
+                tenants.push(ten);
+            }
+            if (slaLevel && slaLevels.indexOf(slaLevel) === -1) {
+                slaLevels.push(slaLevel);
+            }
+        });
+        categories.sort();
+        products.sort();
+        tenants.sort();
+        slaLevels.sort();
+        categories.forEach(function (c) {
+            var opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            categoryFilter.appendChild(opt);
+        });
+        products.forEach(function(p) {
+            var opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            productFilter.appendChild(opt);
+        });
+        tenants.forEach(function (t) {
+            var opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = t;
+            tenantFilter.appendChild(opt);
+        });
+        slaLevels.forEach(function (level) {
+            var opt = document.createElement("option");
+            opt.value = level;
+            opt.textContent = level;
+            slaLevelFilter.appendChild(opt);
+        });
+
+        function getFilteredRows() {
+            var q = searchInput.value.trim().toLowerCase();
+            var st = statusFilter.value;
+            var pr = priorityFilter.value;
+            var ca = categoryFilter.value;
+            var product = productFilter.value;
+            var te = tenantFilter.value;
+            var sl = slaLevelFilter.value;
+            var ss = slaStateFilter.value;
+            var cf = createdFromFilter.value;
+            var ct = createdToFilter.value;
+            return rows.filter(function (row) {
+                if (q && (row.getAttribute("data-title") || "").indexOf(q) === -1) {
+                    return false;
+                }
+                if (st && row.getAttribute("data-status") !== st) {
+                    return false;
+                }
+                if (pr && row.getAttribute("data-priority") !== pr) {
+                    return false;
+                }
+                if (ca && row.getAttribute("data-category") !== ca) {
+                    return false;
+                }
+                if (product && row.getAttribute("data-product") !== product) {
+                    return false;
+                }
+                if (te && row.getAttribute("data-tenant") !== te) {
+                    return false;
+                }
+                if (sl && row.getAttribute("data-sla-level") !== sl) {
+                    return false;
+                }
+                if (ss && row.getAttribute("data-sla-state") !== ss) {
+                    return false;
+                }
+                var rowCreated = row.getAttribute("data-created") || "";
+                if (cf && rowCreated && rowCreated < cf) {
+                    return false;
+                }
+                if (ct && rowCreated && rowCreated > ct) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function render() {
+            var filtered = getFilteredRows();
+            var total = filtered.length;
+            var pageCount = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > pageCount) {
+                currentPage = pageCount;
+            }
+            var start = (currentPage - 1) * pageSize;
+            var end = Math.min(start + pageSize, total);
+            var shown = end - start;
+
+            rows.forEach(function (row) {
+                row.classList.add("d-none");
+            });
+            filtered.slice(start, end).forEach(function (row) {
+                row.classList.remove("d-none");
+            });
+
+            countSpan.textContent = shown + " kayıt gösteriliyor (Toplam: " + total + ")";
+
+            if (total === 0) {
+                emptyState.classList.remove("d-none");
+            } else {
+                emptyState.classList.add("d-none");
+            }
+
+            pagination.innerHTML = "";
+            if (total > 0) {
+                var prevBtn = document.createElement("button");
+                prevBtn.type = "button";
+                prevBtn.className = "btn btn-sm btn-outline-primary";
+                prevBtn.textContent = "Önceki";
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.addEventListener("click", function () {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        render();
+                    }
+                });
+                pagination.appendChild(prevBtn);
+
+                for (var i = 1; i <= pageCount; i++) {
+                    (function (page) {
+                        var btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = "btn btn-sm " + (page === currentPage ? "btn-primary" : "btn-outline-primary");
+                        btn.textContent = page;
+                        btn.addEventListener("click", function () {
+                            currentPage = page;
+                            render();
+                        });
+                        pagination.appendChild(btn);
+                    })(i);
+                }
+
+                var nextBtn = document.createElement("button");
+                nextBtn.type = "button";
+                nextBtn.className = "btn btn-sm btn-outline-primary";
+                nextBtn.textContent = "Sonraki";
+                nextBtn.disabled = currentPage === pageCount;
+                nextBtn.addEventListener("click", function () {
+                    if (currentPage < pageCount) {
+                        currentPage++;
+                        render();
+                    }
+                });
+                pagination.appendChild(nextBtn);
+
+                var info = document.createElement("span");
+                info.className = "ms-3 align-middle";
+                info.textContent = (start + 1) + "–" + end + " / " + total + " kayıt";
+                pagination.appendChild(info);
+            }
+        }
+        clearFiltersButton.addEventListener("click", function() {
+            searchInput.value = "";
+            statusFilter.value = "";
+            priorityFilter.value = "";
+            categoryFilter.value = "";
+            productFilter.value = "";
+            tenantFilter.value = "";
+            slaLevelFilter.value = "";
+            slaStateFilter.value = "";
+            createdFromFilter.value = "";
+            createdToFilter.value = "";
+
+            createdFromFilter.max = "";
+            createdToFilter.min = "";
+
+            currentPage = 1;
+            render();
+        });
+        searchInput.addEventListener("input", function () {
+            currentPage = 1;
+            render();
+        });
+        statusFilter.addEventListener("change", function () {
+            currentPage = 1;
+            render();
+        });
+        priorityFilter.addEventListener("change", function () {
+            currentPage = 1;
+            render();
+        });
+        categoryFilter.addEventListener("change", function () {
+            currentPage = 1;
+            render();
+        });
+        productFilter.addEventListener("change", function() {
+            currentPage = 1;
+            render()
+        });
+        tenantFilter.addEventListener("change", function () {
+            currentPage = 1;
+            render();
+        });
+        slaLevelFilter.addEventListener("change", function () {
+            currentPage = 1;
+            render();
+        });
+        
+        slaStateFilter.addEventListener("change", function () {
+            currentPage = 1;
+            render();
+        });
+        createdFromFilter.addEventListener("change", function () {
+            createdToFilter.min = createdFromFilter.value;
+            currentPage = 1;
+            render();
+        });
+        createdToFilter.addEventListener("change", function () {
+            createdFromFilter.max = createdToFilter.value;
+            currentPage = 1;
+            render();
+        });
+
+        render();
+
+    });
+</script>

@@ -1,0 +1,48 @@
+﻿@model SupportPanel.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Giriş Yap";
+}
+
+<div class="card mx-auto mt-5" style="max-width: 420px;">
+    <div class="card-body p-4">
+        <h4 class="page-title mb-4">Giriş Yap</h4>
+        @if (ViewBag.ResetSuccess != null)
+        {
+            <div class="alert alert-success">@ViewBag.ResetSuccess</div>
+        }
+
+        <form asp-controller="Auth" asp-action="Login" method="post" novalidate>
+            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+            <div class="mb-3">
+                <label asp-for="LoginIdentifier" class="form-label"></label>
+                <input asp-for="LoginIdentifier" class="form-control" autocomplete="username" />
+                <span asp-validation-for="LoginIdentifier" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+                <div asp-validation-summary="ModelOnly" class="login-validation-summary mt-2"></div>
+            </div>
+
+            <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap">
+                <div class="form-check mb-0">
+                    <input asp-for="RememberMe" class="form-check-input" />
+                    <label asp-for="RememberMe" class="form-check-label">Beni Hatırla</label>
+                </div>
+                <a asp-controller="Auth" asp-action="ForgotPassword" class="small ms-2">Şifremi Unuttum</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+

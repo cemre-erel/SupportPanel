@@ -1,0 +1,31 @@
+@model string
+@switch (Model)
+{
+    case "New":
+        <span class="status-badge status-new">Yeni</span>
+        break;
+    case "Assigned":
+        <span class="status-badge status-assigned">Atandı</span>
+        break;
+    case "SupportQueue":
+        <span class="status-badge status-assigned">Destek Havuzunda</span>
+        break;
+    case "InReview":
+        <span class="status-badge status-inreview">İnceleniyor</span>
+        break;
+    case "WaitingCustomer":
+        <span class="status-badge status-waiting">Müşteri Bekleniyor</span>
+        break;
+    case "Resolved":
+        <span class="status-badge status-resolved">Çözüldü</span>
+        break;
+    case "Closed":
+        <span class="status-badge status-closed">Kapatıldı</span>
+        break;
+    case "Cancelled":
+        <span class="status-badge status-cancelled">İptal Edildi</span>
+        break;
+    default:
+        <span class="status-badge status-closed">@Model</span>
+        break;
+}

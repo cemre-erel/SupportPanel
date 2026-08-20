@@ -1,0 +1,163 @@
+﻿@using SupportPanel.Constants
+@using SupportPanel.Interfaces
+@using System.Security.Claims
+@inject INotificationService NotificationService
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var unreadNotificationCount = 0;
+    if (isAuthenticated &&
+        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId))
+    {
+        unreadNotificationCount = await NotificationService.GetUnreadCountAsync(currentUserId);
+    }
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SupportPanel</title>
+    <link rel="icon" href="~/logo/logo_mia_opp_200px.png" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SupportPanel.styles.css" asp-append-version="true" />
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+</head>
+<body>
+    <aside class="sidebar @(isAuthenticated ? "" : "sidebar-auth")" id="sidebar">
+        <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+            <img src="~/logo/logo_mia_opp_200px.png" alt="SupportPanel" class="sidebar-brand-logo" />
+            @if (isAuthenticated)
+            {
+                <span>SupportPanel</span>
+            }
+        </a>
+        @if (isAuthenticated)
+        {
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Genel</div>
+            <a class="sidebar-link" asp-controller="Home" asp-action="Index">Genel Bakış</a>
+            @if (!User.IsInRole(RoleNames.ProductManager) && !User.IsInRole(RoleNames.SupportSpecialist))
+            {
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="Index">
+                        @(User.IsInRole(RoleNames.SystemAdmin) ? "İş Havuzu" : (User.IsInRole(RoleNames.CompanyManager) || User.IsInRole(RoleNames.CompanyUser) ? "Taleplerim" : "Talep Listesi"))
+                </a>
+            }
+            @if (User.IsInRole(RoleNames.SupportSpecialist))
+            {
+                <div class="sidebar-section-title">Talep Yönetimi</div>
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="Index">Ürün Talepleri</a>
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="MyTickets">Bana Atanan Talepler</a>
+            }
+            @if (User.IsInRole(RoleNames.ProductManager))
+            {
+                <div class="sidebar-section-title">Talep Yönetimi</div>
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="Index">Talep Listesi</a>
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="SupportPool">Destek Havuzu</a>
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="MyTickets">Bana Atanan Talepler</a>
+            }
+            @if (User.IsInRole(RoleNames.CompanyManager))
+            {
+                <a class="sidebar-link" asp-controller="Ticket" asp-action="CompanyTickets">Firma Talepleri</a>
+            }
+            @if (User.IsInRole(RoleNames.SystemAdmin))
+            {
+                <div class="sidebar-section-title">Yönetim</div>
+                <a class="sidebar-link" asp-controller="Tenant" asp-action="Index">Firmalar</a>
+                <a class="sidebar-link" asp-controller="Product" asp-action="Index">Ürünler</a>
+                <a class="sidebar-link" asp-controller="Category" asp-action="Index">Kategoriler</a>
+                <a class="sidebar-link" asp-controller="User" asp-action="Index">Kullanıcılar</a>
+                <a class="sidebar-link" asp-controller="User" asp-action="SupportTeam">Destek Ekibi</a>
+                <a class="sidebar-link" asp-controller="TenantProduct" asp-action="Index">Firma-Ürün Eşleştirme</a>
+                <a class="sidebar-link" asp-controller="SlaLevel" asp-action="Index">SLA Seviyeleri</a>
+                <a class="sidebar-link" asp-controller="EmailSettings" asp-action="Index">SMTP Ayarları</a>
+            }
+            @if (User.IsInRole(RoleNames.ProductManager))
+            {
+                <div class="sidebar-section-title">Ürün Yönetimi</div>
+                <a class="sidebar-link" asp-controller="Product" asp-action="Index">Sorumlu Olduğum Ürünler</a>
+                <a class="sidebar-link" asp-controller="User" asp-action="Index">Destek Uzmanları</a>
+            }
+            @if (User.IsInRole(RoleNames.CompanyManager))
+            {
+                <div class="sidebar-section-title">Yönetim</div>
+                <a class="sidebar-link" asp-controller="User" asp-action="Index">Kullanıcılar</a>
+            }
+            @if (!User.IsInRole(RoleNames.SupportSpecialist))
+            {
+                <div class="sidebar-section-title">Raporlama</div>
+                <a class="sidebar-link" asp-controller="Reports" asp-action="Index">Talep ve SLA Analizi</a>
+                @if (User.IsInRole(RoleNames.SystemAdmin) || User.IsInRole(RoleNames.ProductManager))
+                {
+                    <a class="sidebar-link" asp-controller="Reports" asp-action="ProductCounts">Ürün Talep Özeti</a>
+                    <a class="sidebar-link" asp-controller="Reports" asp-action="ProductCompanyCounts">Firma Talep Özeti</a>
+                    <a class="sidebar-link" asp-controller="Reports" asp-action="SpecialistDistribution">Destek Uzmanı Dağılımı</a>
+                }
+            }
+        </nav>
+        }
+    </aside>
+    @if (isAuthenticated)
+    {
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    }
+
+    <div class="@(isAuthenticated ? "main-content" : "auth-content")">
+        @if (isAuthenticated)
+        {
+        <header class="topbar">
+            <button class="topbar-toggle" id="sidebarToggle" type="button" aria-label="Menüyü aç veya kapat" aria-expanded="true">
+                <span class="hamburger-icon" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                </span>
+            </button>
+            <h1 class="topbar-title">@ViewData["Title"]</h1>
+            <div class="topbar-user">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a class="nav-link position-relative d-inline-flex align-items-center me-3 p-0 text-decoration-none"
+                       asp-controller="Notification"
+                       asp-action="Index"
+                       title="Bildirimler">
+                        🔔
+                        @if (unreadNotificationCount > 0)
+                        {
+                            <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">
+                                @unreadNotificationCount
+                            </span>
+                        }
+                    </a>
+                    <span class="topbar-user-text">@User.Identity.Name</span>
+                    <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Çıkış Yap</button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Auth" asp-action="Login" class="btn btn-outline-secondary btn-sm">Giriş Yap</a>
+                }
+            </div>
+        </header>
+        }
+
+        <div class="@(isAuthenticated ? "container-fluid px-4 py-4" : "auth-container")">
+            <main role="main">
+                @RenderBody()
+            </main>
+        </div>
+
+        <footer class="footer text-muted">
+            <div class="container-fluid px-4">
+                &copy; 2026 - SupportPanel
+            </div>
+        </footer>
+    </div>
+
+    <div id="appToast" class="app-toast">@(TempData["Success"]?.ToString() ?? "")</div>
+    <div id="appToastError" class="app-toast">@(TempData["Error"]?.ToString() ?? "")</div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

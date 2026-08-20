@@ -1,0 +1,44 @@
+﻿@model SupportPanel.Models.TenantProduct
+
+<h2 class="page-title">Firma-Ürün Eşleştirme</h2>
+
+<div class="card">
+    <div class="card-header">Yeni Eşleştirme</div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" novalidate>
+            <div class="mb-3">
+                <label asp-for="TenantId" class="form-label">Firma</label>
+                <select asp-for="TenantId"
+                        asp-items="ViewBag.Tenants"
+                        class="form-select">
+                    <option value="">Firma Seçiniz</option>
+                </select>
+                <span asp-validation-for="TenantId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ProductId" class="form-label">Ürün</label>
+                <select asp-for="ProductId"
+                        asp-items="ViewBag.Products"
+                        class="form-select">
+                    <option value="">Ürün Seçiniz</option>
+                </select>
+                <span asp-validation-for="ProductId" class="text-danger fw-bold small d-block mt-1"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                <label asp-for="IsActive" class="form-check-label">Aktif</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

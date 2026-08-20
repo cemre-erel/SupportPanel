@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SupportPanel.csproj" />
+  <Project Path="SupportPanel.Tests/SupportPanel.Tests.csproj" />
+</Solution>

@@ -1,0 +1,35 @@
+﻿@model SupportPanel.Models.Product
+
+<h2 class="page-title">Ürünü Sil</h2>
+
+<div class="card">
+    <div class="card-header">Ürünü Sil</div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            Bu ürünü silmek istediğinize emin misiniz?
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Ürün Adı</dt>
+            <dd class="col-sm-9">@Model.Name</dd>
+
+            <dt class="col-sm-3">Açıklama</dt>
+            <dd class="col-sm-9">@Model.Description</dd>
+
+            <dt class="col-sm-3">Versiyon</dt>
+            <dd class="col-sm-9">@Model.Version</dd>
+
+            <dt class="col-sm-3">Aktif</dt>
+            <dd class="col-sm-9">@(Model.IsActive ? "Evet" : "Hayır")</dd>
+        </dl>
+
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" novalidate>
+            <button type="submit" class="btn btn-danger">Sil</button>
+            <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

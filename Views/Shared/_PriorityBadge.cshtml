@@ -1,0 +1,19 @@
+@model string
+@switch (Model)
+{
+    case "Low":
+        <span class="priority-badge priority-low">Düşük</span>
+        break;
+    case "Medium":
+        <span class="priority-badge priority-medium">Orta</span>
+        break;
+    case "High":
+        <span class="priority-badge priority-high">Yüksek</span>
+        break;
+    case "Critical":
+        <span class="priority-badge priority-critical">Kritik</span>
+        break;
+    default:
+        <span class="priority-badge priority-low">@Model</span>
+        break;
+}

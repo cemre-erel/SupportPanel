@@ -1,0 +1,97 @@
+@model List<SupportPanel.ViewModels.ProductCompanyCountReportViewModel>
+@{
+    ViewData["Title"] = "Firma Talep Özeti";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Firma Talep Özeti</h2>
+    <span class="badge bg-light text-dark">Rol kapsamınızdaki ürünler</span>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="mb-3">
+                <label for="companyProductSearch" class="form-label">Ara</label>
+                <input id="companyProductSearch"
+                       type="search"
+                       class="form-control"
+                       placeholder="Firma adı ara..."
+                       autocomplete="off" />
+            </div>
+            <div class="table-responsive">
+                <table id="companyProductTable" class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Firma</th>
+                            <th>Ürün</th>
+                            <th>Toplam Talep</th>
+                            <th>Açık Talep</th>
+                            <th>Tamamlanmış Talep</th>
+                            <th>İptal Edilen Talep</th>
+                            <th>Atanmış Talep</th>
+                            <th>Atanmamış Talep</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr data-company-name="@item.CompanyName">
+                                <td class="fw-semibold">@item.CompanyName</td>
+                                <td>@item.ProductName</td>
+                                <td>
+                                    <a asp-controller="Reports" asp-action="Index"
+                                       asp-route-tenant="@item.CompanyName"
+                                       asp-route-product="@item.ProductName">
+                                        @item.TotalCount
+                                    </a>
+                                </td>
+                                <td>@item.OpenCount</td>
+                                <td>@item.CompletedCount</td>
+                                <td>@item.CancelledCount</td>
+                                <td>@item.AssignedCount</td>
+                                <td>@item.UnassignedCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p id="companyProductSearchEmpty" class="text-muted text-center py-4 mb-0 d-none">
+                Aramanızla eşleşen firma bulunamadı.
+            </p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">Raporlanacak ürün ve firma talebi bulunmuyor.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const searchInput = document.getElementById('companyProductSearch');
+            const table = document.getElementById('companyProductTable');
+            const emptyMessage = document.getElementById('companyProductSearchEmpty');
+
+            if (!searchInput || !table || !emptyMessage) return;
+
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.trim().toLocaleLowerCase('tr-TR');
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    const companyName = (row.dataset.companyName ?? '').toLocaleLowerCase('tr-TR');
+                    const visible = companyName.includes(term);
+                    row.classList.toggle('d-none', !visible);
+                    if (visible) visibleCount++;
+                });
+
+                table.classList.toggle('d-none', visibleCount === 0);
+                emptyMessage.classList.toggle('d-none', visibleCount !== 0);
+            });
+        })();
+    </script>
+}

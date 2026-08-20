@@ -1,0 +1,199 @@
+@model ReportsDashboardViewModel
+@using SupportPanel.Constants
+@{
+    ViewData["Title"] = "Talep ve SLA Analizi";
+    var selectedViolationTypes = Context.Request.Query["violationTypes"].ToArray();
+    var selectedAssigneeIds = Context.Request.Query["assignedUserIds"].ToArray();
+    var selectedPriorities = Context.Request.Query["priorities"].ToArray();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Talep ve SLA Analizi</h2>
+    <span class="badge bg-light text-dark">Rol kapsamınızdaki veriler</span>
+</div>
+
+<form method="get" class="card mb-4" id="reportFilters">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2"><label class="form-label">Başlangıç</label><input id="reportStartDate" type="date" name="startDate" value="@Context.Request.Query["startDate"]" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label">Bitiş</label><input id="reportEndDate" type="date" name="endDate" value="@Context.Request.Query["endDate"]" class="form-control" /></div>
+            <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Filtrele</button>
+                <button type="button" class="btn btn-outline-secondary" id="clearReportDates">Temizle</button>
+            </div>
+            <div class="col-12">
+                <span id="dateRangeError" class="text-danger small fw-bold">@ViewData["DateRangeError"]</span>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="row g-3 mb-4">
+    @foreach (var card in new[] {
+        ("Genel Toplam", Model.TotalTickets, "#003DA5"), ("Açık", Model.OpenTickets, "#007AFF"),
+        ("Tamamlanmış", Model.ResolvedTickets + Model.ClosedTickets, "#20A957"),
+        ("İptal Edildi", Model.CancelledTickets, "#6C757D"),
+        ("Kritik Süre", Model.WarningSlaTickets, "#997404"), ("SLA İhlali", Model.SlaBreachedTickets, "#DC3545"),
+        ("İlk Müdahale İhlali", Model.ResponseBreachedTickets, "#DC3545"), ("Çözüm İhlali", Model.ResolutionBreachedTickets, "#DC3545") })
+    {
+        <div class="col-6 col-md-4 col-xl"><div class="card h-100"><div class="card-body"><div class="fs-3 fw-bold" style="color:@card.Item3">@card.Item2</div><div class="text-muted small">@card.Item1</div></div></div></div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('reportFilters');
+            if (!form) return;
+
+            const startDate = document.getElementById('reportStartDate');
+            const endDate = document.getElementById('reportEndDate');
+            const dateRangeError = document.getElementById('dateRangeError');
+
+            const updateDateLimits = () => {
+                endDate.min = startDate.value || '';
+            };
+
+            updateDateLimits();
+            startDate.addEventListener('change', updateDateLimits);
+            form.addEventListener('submit', event => {
+                if (startDate.value && endDate.value && endDate.value < startDate.value) {
+                    event.preventDefault();
+                    dateRangeError.textContent = 'Bitiş tarihi başlangıç tarihinden önce olamaz.';
+                    endDate.focus();
+                    return;
+                }
+
+                dateRangeError.textContent = '';
+            });
+
+            document.querySelectorAll('select[form="reportFilters"], input[type="checkbox"][form="reportFilters"]').forEach(control => {
+                control.addEventListener('change', () => form.requestSubmit());
+            });
+
+            document.getElementById('clearReportDates')?.addEventListener('click', () => {
+                startDate.value = '';
+                endDate.value = '';
+                endDate.min = '';
+                dateRangeError.textContent = '';
+                form.requestSubmit();
+            });
+
+            const ticketSearch = document.getElementById('reportTicketSearch');
+            ticketSearch?.addEventListener('keydown', event => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                form.requestSubmit();
+            });
+
+            document.querySelectorAll('.report-filter-menu').forEach(menu => {
+                const controls = Array.from(menu.querySelectorAll('select, input'));
+                if (controls.length === 0) return;
+                const control = controls[0];
+
+                const filterRow = document.createElement('div');
+                filterRow.className = 'd-flex align-items-center gap-2';
+
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.className = 'btn btn-sm border-0 p-1 report-filter-clear';
+                clearButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
+                clearButton.title = 'Bu filtreyi temizle';
+                clearButton.setAttribute('aria-label', 'Bu filtreyi temizle');
+                clearButton.addEventListener('click', event => {
+                    event.stopPropagation();
+                    controls.forEach(item => {
+                        if (item.type === 'checkbox') item.checked = false;
+                        else item.value = '';
+                    });
+                    form.requestSubmit();
+                });
+
+                if (menu.classList.contains('report-multi-filter-menu')) {
+                    filterRow.classList.add('justify-content-end', 'mt-2');
+                    filterRow.appendChild(clearButton);
+                    menu.appendChild(filterRow);
+                } else {
+                    menu.insertBefore(filterRow, control);
+                    filterRow.appendChild(control);
+                    filterRow.appendChild(clearButton);
+                }
+            });
+        });
+    </script>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card"><div class="card-body"><strong>@SlaDurationFormatter.FormatMinutes((int)Math.Round(Model.AverageResponseMinutes))</strong><div class="small text-muted">Ortalama İlk Müdahale</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><strong>@SlaDurationFormatter.FormatMinutes((int)Math.Round(Model.AverageResolutionMinutes))</strong><div class="small text-muted">Ortalama Çözüm</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><strong>%@Model.ResponseComplianceRate.ToString("0.0")</strong><div class="small text-muted">SLA İçinde Yanıtlanan</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><strong>%@Model.ResolutionComplianceRate.ToString("0.0")</strong><div class="small text-muted">SLA İçinde Çözülen</div></div></div></div>
+</div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="btn-group" role="group">
+        <a asp-action="Index"
+           class="btn btn-sm btn-outline-primary @(string.IsNullOrEmpty(Context.Request.Query["status"]) ? "active" : "")">
+            Aktif Talepler
+        </a>
+        <a asp-action="Index"
+           asp-route-status="Cancelled"
+           class="btn btn-sm btn-outline-secondary @(Context.Request.Query["status"] == "Cancelled" ? "active" : "")">
+            İptal Edilen Talepler (@Model.CancelledTickets)
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Talep ve SLA Detayları</div>
+    
+<div class="card">
+    <div class="card-header">Talep ve SLA Detayları</div>
+    <div class="table-responsive reports-detail-table">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th><div class="d-flex align-items-center gap-1">Talep<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="Talep başlığı filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><input id="reportTicketSearch" type="search" name="search" form="reportFilters" value="@Context.Request.Query["search"]" class="form-control form-control-sm" placeholder="Talep başlığı ara..." autocomplete="off" /></div></div></div></th>
+                    <th>
+                        <div class="d-flex align-items-center gap-1">Firma
+                            @if (User.IsInRole(RoleNames.SystemAdmin) || User.IsInRole(RoleNames.ProductManager))
+                            {
+                                <div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="Firma filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><select name="tenant" form="reportFilters" class="form-select form-select-sm"><option value="">Tümü</option>@foreach (var x in Model.Tenants){<option selected="@(Context.Request.Query["tenant"] == x)">@x</option>}</select></div></div>
+                            }
+                        </div>
+                    </th>
+                    <th><div class="d-flex align-items-center gap-1">Ürün<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="Ürün filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><select name="product" form="reportFilters" class="form-select form-select-sm"><option value="">Tümü</option>@foreach (var x in Model.Products){<option selected="@(Context.Request.Query["product"] == x)">@x</option>}</select></div></div></div></th>
+                    <th><div class="d-flex align-items-center gap-1">Kategori<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="Kategori filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><select name="category" form="reportFilters" class="form-select form-select-sm"><option value="">Tümü</option>@foreach (var x in Model.Categories){<option selected="@(Context.Request.Query["category"] == x)">@x</option>}</select></div></div></div></th>
+                    <th><div class="d-flex align-items-center gap-1">Öncelik<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="Öncelik filtresini aç">▽</button><div class="dropdown-menu p-3 report-filter-menu report-multi-filter-menu">
+                        @foreach (var priority in new[] { ("Low", "Düşük"), ("Medium", "Orta"), ("High", "Yüksek"), ("Critical", "Kritik") })
+                        {
+                            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="priorities" value="@priority.Item1" id="priority_@priority.Item1" form="reportFilters" checked="@selectedPriorities.Contains(priority.Item1)" /><label class="form-check-label fw-normal" for="priority_@priority.Item1">@priority.Item2</label></div>
+                        }
+                    </div></div></div></th>
+                    <th><div class="d-flex align-items-center gap-1">SLA<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="SLA filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><select name="slaLevel" form="reportFilters" class="form-select form-select-sm"><option value="">Tümü</option>@foreach (var x in Model.SlaLevels){<option selected="@(Context.Request.Query["slaLevel"] == x)">@x</option>}</select></div></div></div></th>
+                    <th><div class="d-flex align-items-center gap-1">Durum<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="Talep durumu filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><select name="status" form="reportFilters" class="form-select form-select-sm"><option value="">Tümü</option>@foreach (var x in TicketStatus.All){<option value="@x" selected="@(Context.Request.Query["status"] == x)">@TicketStatus.DisplayNames[x]</option>}</select></div></div></div></th>
+                    <th><div class="d-flex align-items-center gap-1">SLA Durumu<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" aria-label="SLA durumu filtresini aç">▽</button><div class="dropdown-menu p-2 report-filter-menu"><select name="slaState" form="reportFilters" class="form-select form-select-sm"><option value="">Tümü</option><option value="active" selected="@(Context.Request.Query["slaState"] == "active")">Devam eden</option><option value="warning" selected="@(Context.Request.Query["slaState"] == "warning")">Kritik süre</option><option value="breached" selected="@(Context.Request.Query["slaState"] == "breached")">İhlal</option><option value="completed" selected="@(Context.Request.Query["slaState"] == "completed")">Tamamlanan</option></select></div></div></div></th>
+                    <th><div class="d-flex align-items-center gap-1">İhlal Türü<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="İhlal türü filtresini aç">▽</button><div class="dropdown-menu p-3 report-filter-menu report-multi-filter-menu">
+                        @foreach (var violation in new[] { "İlk müdahale", "Çözüm" })
+                        {
+                            var checkboxId = "violation_" + violation.Replace(" ", "_");
+                            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="violationTypes" value="@violation" id="@checkboxId" form="reportFilters" checked="@selectedViolationTypes.Contains(violation)" /><label class="form-check-label fw-normal" for="@checkboxId">@violation</label></div>
+                        }
+                    </div></div></div></th><th>Gecikme</th><th><div class="d-flex align-items-center gap-1">Atanan<div class="dropdown"><button class="btn btn-sm p-1 border-0 report-filter-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="Atanan kişi filtresini aç">▽</button><div class="dropdown-menu p-3 report-filter-menu report-multi-filter-menu">
+                        <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="assignedUserIds" value="0" id="assignee_unassigned" form="reportFilters" checked="@selectedAssigneeIds.Contains("0")" /><label class="form-check-label fw-normal" for="assignee_unassigned">Atanmadı</label></div>
+                        @foreach (var assignee in Model.Assignees)
+                        {
+                            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="assignedUserIds" value="@assignee.Id" id="assignee_@assignee.Id" form="reportFilters" checked="@selectedAssigneeIds.Contains(assignee.Id.ToString())" /><label class="form-check-label fw-normal" for="assignee_@assignee.Id">@assignee.Name</label></div>
+                        }
+                    </div></div></div></th><th>Açılış</th><th>Kapanış</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.TicketRows)
+                {
+                    <tr><td><a asp-controller="Ticket" asp-action="Details" asp-route-id="@row.TicketId" class="fw-semibold text-decoration-none">@row.Title</a></td><td>@row.TenantName</td><td>@row.ProductName</td><td>@row.CategoryName</td><td>@(row.Priority == "Low" ? "Düşük" : row.Priority == "Medium" ? "Orta" : row.Priority == "High" ? "Yüksek" : row.Priority == "Critical" ? "Kritik" : row.Priority)</td><td>@row.SlaLevelName</td><td>@TicketStatus.DisplayNames.GetValueOrDefault(row.Status, row.Status)</td><td><span class="fw-semibold @(row.SlaState == "breached" ? "text-danger" : row.SlaState == "warning" ? "text-warning" : row.SlaState == "active" ? "text-success" : "text-secondary")">@row.SlaStateText</span></td><td>@row.ViolationType</td><td>@row.DelayText</td><td>@row.AssignedUserName</td><td>@row.CreatedDate.ToString("dd.MM.yyyy HH:mm")</td><td>@(row.CompletionDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td></tr>
+                }
+                @if (!Model.TicketRows.Any()) { <tr><td colspan="13" class="text-center text-muted py-4">Filtrelere uygun kayıt bulunamadı.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

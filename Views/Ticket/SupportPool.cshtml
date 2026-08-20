@@ -1,0 +1,9 @@
+@model List<SupportPanel.Models.Ticket>
+
+@{
+    ViewData["Title"] = "Destek Havuzu";
+    ViewData["ShowCreateButton"] = false;
+    ViewData["ReturnToSupportPool"] = true;
+}
+
+@await Html.PartialAsync("Index", Model)

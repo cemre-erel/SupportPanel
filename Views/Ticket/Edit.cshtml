@@ -1,0 +1,97 @@
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@using SupportPanel.Models
+@model SupportPanel.Models.Ticket
+
+@if (Model.Status != TicketStatus.Cancelled)
+{
+    <form asp-action="Edit" method="post" novalidate>
+    <input type="hidden" asp-for="Id" />
+    @if (ViewBag.ReturnToCompanyTickets == true)
+    {
+        <input type="hidden" name="returnTo" value="company-tickets" />
+    }
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Talep Düzenle</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Başlık</label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Açıklama</label>
+                        <textarea asp-for="Description" class="form-control" rows="5"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Priority" class="form-label">Öncelik</label>
+                        <select asp-for="Priority" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Low">Düşük</option>
+                            <option value="Medium">Orta</option>
+                            <option value="High">Yüksek</option>
+                            <option value="Critical">Kritik</option>
+                        </select>
+                        <span asp-validation-for="Priority" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SlaLevelId" class="form-label">SLA Seviyesi</label>
+                        <select asp-for="SlaLevelId" asp-items="@(new SelectList(ViewBag.SlaLevels, "Id", "Name", ViewBag.SelectedSlaLevelId))" class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="SlaLevelId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ProductId" class="form-label">Ürün</label>
+                        <select asp-for="ProductId" asp-items="@(new SelectList(ViewBag.Products, "Id", "Name"))" class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label">Kategori</label>
+                        <select asp-for="CategoryId" asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))" class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white" style="border-top: 1px solid #E8EBEF;">
+            <button type="submit" class="btn btn-primary">Güncelle</button>
+            @if (ViewBag.ReturnToCompanyTickets == true)
+            {
+                <a asp-action="CompanyTickets" class="btn btn-light">İptal</a>
+            }
+            else
+            {
+                <a asp-action="Index" class="btn btn-light">İptal</a>
+            }
+        </div>
+    </div>
+</form>
+}
+else
+{
+    <div class="alert alert-warning">
+        Bu talep iptal edilmiştir. Güncelleme yapılamaz.
+    </div>
+    <a asp-action="Index" class="btn btn-primary">Listeye Dön</a>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

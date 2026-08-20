@@ -1,0 +1,121 @@
+@model SupportPanel.ViewModels.SpecialistDistributionReportViewModel
+@using SupportPanel.Services
+@{
+    ViewData["Title"] = "Destek Uzmanı Dağılımı";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">Destek Uzmanı Dağılımı</h2>
+    <span class="badge bg-light text-dark">Rol kapsamınızdaki ürünler</span>
+</div>
+
+<form method="get" class="card mb-4" id="specialistDistributionFilter">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Destek Uzmanı</label>
+                <input type="search" name="specialist" id="specialistSearch" value="@Context.Request.Query["specialist"]"
+                       class="form-control" placeholder="Ad veya soyad ara..." autocomplete="off" autofocus />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ürün</label>
+                <select name="product" id="specialistProductFilter" class="form-select">
+                    <option value="">Tümü</option>
+                    @foreach (var item in Model.Products)
+                    {
+                        <option value="@item" selected="@(Context.Request.Query["product"] == item)">@item</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <a asp-action="SpecialistDistribution" class="btn btn-outline-secondary">Temizle</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><div class="fs-3 fw-bold text-primary">@Model.TotalTickets</div><div class="text-muted small">Toplam Talep</div></div></div></div>
+    <div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><div class="fs-3 fw-bold text-success">@Model.AssignedTickets</div><div class="text-muted small">Atanmış</div></div></div></div>
+    <div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><div class="fs-3 fw-bold text-success">@Model.CompletedTickets</div><div class="text-muted small">Çözüldü/Kapatıldı</div></div></div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('specialistDistributionFilter');
+            var search = document.getElementById('specialistSearch');
+            var product = document.getElementById('specialistProductFilter');
+            var timer;
+
+            if (!form || !search) return;
+
+            search.focus();
+            search.setSelectionRange(search.value.length, search.value.length);
+
+            search.addEventListener('input', function () {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(function () { form.submit(); }, 350);
+            });
+
+            if (product) {
+                product.addEventListener('change', function () { form.submit(); });
+            }
+        })();
+    </script>
+}
+
+<div class="card">
+    <div class="card-header">Uzman ve Ürün Bazında Dağılım</div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Destek Uzmanı</th><th>Ürün</th><th>Toplam</th><th>Açık</th>
+                    <th>İnceleniyor</th><th>Müşteri Bekleniyor</th><th>Çözüldü</th><th>Kapatıldı</th><th>SLA İhlali</th>
+                    <th>Ort. İlk Müdahale</th><th>Ort. Çözüm</th><th>SLA Başarı</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="fw-semibold @(row.SpecialistId.HasValue ? "" : "text-warning")">@row.SpecialistName</td>
+                        <td>@row.ProductName</td>
+                        <td>
+                            @if (row.SpecialistId.HasValue)
+                            {
+                                <a asp-controller="Reports" asp-action="Index"
+                                   asp-route-assignedUserIds="@row.SpecialistId"
+                                   asp-route-product="@row.ProductName">
+                                    @row.TotalCount
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Reports" asp-action="Index"
+                                   asp-route-assignedUserIds="0"
+                                   asp-route-product="@row.ProductName">
+                                    @row.TotalCount
+                                </a>
+                            }
+                        </td>
+                        <td>@row.OpenCount</td>
+                        <td>@row.InReviewCount</td><td>@row.WaitingCustomerCount</td>
+                        <td>@row.ResolvedCount</td><td>@row.ClosedCount</td>
+                        <td class="@(row.SlaBreachedCount > 0 ? "text-danger fw-semibold" : "")">@row.SlaBreachedCount</td>
+                        <td>@(row.AverageResponseMinutes.HasValue ? SlaDurationFormatter.FormatMinutes((int)Math.Round(row.AverageResponseMinutes.Value)) : "—")</td>
+                        <td>@(row.AverageResolutionMinutes.HasValue ? SlaDurationFormatter.FormatMinutes((int)Math.Round(row.AverageResolutionMinutes.Value)) : "—")</td>
+                        <td class="@(row.SlaSuccessRate.HasValue && row.SlaSuccessRate.Value < 100 ? "text-warning fw-semibold" : "text-success fw-semibold")">
+                            @(row.SlaSuccessRate.HasValue ? $"%{row.SlaSuccessRate.Value:0.#}" : "—")
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Rows.Any())
+                {
+                    <tr><td colspan="13" class="text-center text-muted py-4">Filtrelere uygun kayıt bulunamadı.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

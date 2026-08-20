@@ -1,0 +1,30 @@
+@model SupportPanel.Models.Category
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="page-title mb-0">Yeni Kategori</h2>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" id="categoryForm" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Ad</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Açıklama</label>
+                <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+        </form>
+    </div>
+    <div class="card-footer">
+        <button type="submit" form="categoryForm" class="btn btn-primary">Kaydet</button>
+        <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

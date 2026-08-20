@@ -1,0 +1,9 @@
+﻿@model List<SupportPanel.Models.Ticket>
+
+@{
+    ViewData["Title"] = "Firmama Ait Talepler";
+    ViewData["ShowCreateButton"] = false;
+    ViewData["ReturnToCompanyTickets"] = true;
+}
+
+@await Html.PartialAsync("Index", Model)

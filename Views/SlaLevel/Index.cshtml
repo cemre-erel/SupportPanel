@@ -1,0 +1,69 @@
+@model List<SupportPanel.Models.SlaLevel>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">SLA Seviyeleri</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        Yeni SLA Seviyesi
+    </a>
+</div>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Firma</th>
+            <th>Seviye Adı</th>
+            <th>Hesaplama Yöntemi</th>
+            <th>İlk Müdahale Hedefi</th>
+            <th>Çözüm Hedefi</th>
+            <th>Aktif</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="7">
+                    <div class="alert alert-info border-0 bg-white text-center mb-0">
+                        Kayıt bulunamadı.
+                    </div>
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Tenant?.CompanyName</td>
+                    <td>@item.Name</td>
+                    <td>@(item.Tenant?.SLACalculationMethod == SlaCalculationMethod.WorkingHours ? "Çalışma Saatleri" : "7x24")</td>
+                    <td>@SlaDurationFormatter.FormatMinutes(item.ResponseTargetMinutes)</td>
+                    <td>@SlaDurationFormatter.FormatMinutes(item.ResolutionTargetMinutes)</td>
+                    <td>
+                        @if (item.IsActive)
+                        {
+                            <span class="badge bg-success">Aktif</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Pasif</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Edit"
+                           asp-route-id="@item.Id"
+                           class="btn btn-warning btn-sm">
+                            Düzenle
+                        </a>
+                        <a asp-action="Delete"
+                           asp-route-id="@item.Id"
+                           class="btn btn-danger btn-sm">
+                            Sil
+                        </a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

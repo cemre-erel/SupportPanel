@@ -1,0 +1,55 @@
+@model SupportPanel.Models.SlaLevel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="page-title mb-0">SLA Seviyesi Düzenle</h2>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" method="post" id="slaLevelForm" novalidate>
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Seviye Adı</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="TenantId" class="form-label">Firma</label>
+                <select asp-for="TenantId"
+                        asp-items="@(new SelectList(ViewBag.Tenants, "Id", "CompanyName"))"
+                        class="form-select">
+                    <option value="">Seçiniz</option>
+                </select>
+                <span asp-validation-for="TenantId" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ResponseTargetMinutes" class="form-label">İlk Müdahale Hedefi (dakika)</label>
+                <input asp-for="ResponseTargetMinutes" type="number" class="form-control sla-minute-input" min="1" max="525600" />
+                <small class="form-text text-muted sla-duration-preview"></small>
+                <span asp-validation-for="ResponseTargetMinutes" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ResolutionTargetMinutes" class="form-label">Çözüm Hedefi (dakika)</label>
+                <input asp-for="ResolutionTargetMinutes" type="number" class="form-control sla-minute-input" min="1" max="525600" />
+                <small class="form-text text-muted sla-duration-preview"></small>
+                <span asp-validation-for="ResolutionTargetMinutes" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <div class="form-check">
+                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                    <label asp-for="IsActive" class="form-check-label">Aktif</label>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="card-footer">
+        <button type="submit" form="slaLevelForm" class="btn btn-primary">Güncelle</button>
+        <a asp-action="Index" class="btn btn-light">İptal</a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <partial name="_SlaDurationPreviewScripts" />
+}

@@ -1,0 +1,262 @@
+﻿@model SupportPanel.Models.User
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using SupportPanel.Constants
+
+@{
+    var returnToSupportTeam = ViewBag.ReturnToSupportTeam == true;
+}
+
+<h2 class="page-title">@(returnToSupportTeam ? "Destek Ekibi Üyesini Düzenle" : "Kullanıcı Düzenle")</h2>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">@(returnToSupportTeam ? "Destek Ekibi Üyesini Düzenle" : "Kullanıcı Düzenle")</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" method="post" autocomplete="off" novalidate id="editUserForm">
+            <input type="hidden" asp-for="Id" />
+            @if (returnToSupportTeam)
+            {
+                <input type="hidden" name="returnTo" value="support-team" />
+            }
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FirstName" class="form-label">Ad</label>
+                    <input asp-for="FirstName" class="form-control" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="LastName" class="form-label">Soyad</label>
+                    <input asp-for="LastName" class="form-control" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Username" class="form-label">Kullanıcı Adı</label>
+                    <input asp-for="Username" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label">E-posta</label>
+                    <input asp-for="Email" type="email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="PasswordHash" class="form-label">Şifre (opsiyonel)</label>
+                    <input type="password"
+                           id="PasswordHash"
+                           name="PasswordHash"
+                           class="form-control"
+                           autocomplete="new-password"
+                           placeholder="Yeni şifre (boş bırakılırsa değişmez)" />
+                    <span asp-validation-for="PasswordHash" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label">Şifre Onayı</label>
+                    <input asp-for="ConfirmPassword"
+                           type="password"
+                           class="form-control"
+                           autocomplete="new-password"
+                           placeholder="Yeni şifreyi tekrar yazın" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="RoleId" class="form-label">Rol</label>
+                    <select asp-for="RoleId"
+                            asp-items="@(new SelectList(ViewBag.Roles, "Id", "Name"))"
+                            class="form-select">
+                        <option value="">Seçiniz</option>
+                    </select>
+                    <span asp-validation-for="RoleId" class="text-danger"></span>
+                </div>
+                <div class="col-12 d-none" id="deactivationWarning">
+                    <div class="alert alert-warning mb-0">
+                        <strong>Dikkat:</strong> Kullanıcı pasifleştirildiğinde ürün sorumlulukları serbest bırakılır ve üzerindeki açık talepler destek havuzuna aktarılır. ProductManager ise yönettiği ürünler yeni yönetici ataması bekler.
+                    </div>
+                </div>
+
+                @if (User.IsInRole(RoleNames.CompanyManager))
+                {
+                    <div class="col-md-6">
+                        <label class="form-label">Firma</label>
+                        <input type="hidden" asp-for="TenantId" />
+                        <input type="text" class="form-control"
+                               value="@((ViewBag.CurrentTenant as Tenant)?.CompanyName ?? "")"
+                               disabled />
+                        <small class="text-muted">Firma değiştirilemez.</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-6" id="tenantField">
+                        <label asp-for="TenantId" class="form-label">Firma</label>
+                        <select asp-for="TenantId"
+                                asp-items="@(new SelectList(ViewBag.Tenants, "Id", "CompanyName"))"
+                                class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="TenantId" class="text-danger"></span>
+                    </div>
+                }
+
+                @if (User.IsInRole(RoleNames.SystemAdmin) || User.IsInRole(RoleNames.ProductManager))
+                {
+                    var selectedProductIds = ViewBag.SelectedProductIds as List<int> ?? new List<int>();
+                    <div class="col-12 d-none" id="productAssignmentsField">
+                        <label class="form-label fw-semibold" id="productAssignmentsLabel">@(User.IsInRole(RoleNames.SystemAdmin) ? "Yöneticisi Olduğu Ürünler" : "İlgileneceği Ürünler")</label>
+                        <div class="border rounded p-3">
+                            @foreach (var product in (ViewBag.Products as List<Product> ?? new List<Product>()))
+                            {
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input product-assignment"
+                                           type="checkbox"
+                                           name="productIds"
+                                           value="@product.Id"
+                                           id="product_@product.Id"
+                                           checked="@selectedProductIds.Contains(product.Id)" />
+                                    <label class="form-check-label" for="product_@product.Id">
+                                        @product.Name
+                                    </label>
+                                </div>
+                            }
+                            <div class="form-text">Kullanıcı yalnızca seçilen ürünlerin taleplerinde görevlendirilebilir.</div>
+                            @Html.ValidationMessage("ProductIds", "", new { @class = "text-danger fw-bold small d-block mt-1", id = "productAssignmentsError" })
+                        </div>
+                    </div>
+                    @if (User.IsInRole(RoleNames.SystemAdmin))
+                    {
+                        var selectedSpecialistProductIds = ViewBag.SelectedSpecialistProductIds as List<int> ?? new List<int>();
+                        <div class="col-12 d-none" id="specialistProductAssignmentsField">
+                            <label class="form-label fw-semibold">Destek Uzmanı Olduğu Ürünler (Opsiyonel)</label>
+                            <div class="border rounded p-3">
+                                @foreach (var product in (ViewBag.Products as List<Product> ?? new List<Product>()))
+                                {
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input specialist-product-assignment" type="checkbox"
+                                               name="specialistProductIds" value="@product.Id" id="specialist_product_@product.Id"
+                                               checked="@selectedSpecialistProductIds.Contains(product.Id)" />
+                                        <label class="form-check-label" for="specialist_product_@product.Id">@product.Name</label>
+                                    </div>
+                                }
+                                <div class="form-text">Ürün yöneticisi bu ürünlerde normal destek uzmanı olarak da görev alabilir.</div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                        <label asp-for="IsActive" class="form-check-label">Aktif</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Güncelle</button>
+                @if (returnToSupportTeam)
+                {
+                    <a asp-action="SupportTeam" class="btn btn-light">İptal</a>
+                }
+                else
+                {
+                    <a asp-action="Index" class="btn btn-light">İptal</a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var roleSelect = document.getElementById("RoleId");
+            var tenantField = document.getElementById("tenantField");
+            var tenantSelect = document.getElementById("TenantId");
+            var productAssignmentsField = document.getElementById("productAssignmentsField");
+            var productAssignmentsLabel = document.getElementById("productAssignmentsLabel");
+            var specialistProductAssignmentsField = document.getElementById("specialistProductAssignmentsField");
+            var productCheckboxes = document.querySelectorAll(".product-assignment");
+            var productAssignmentsError = document.getElementById("productAssignmentsError");
+            var form = document.getElementById("editUserForm");
+            var activeCheckbox = document.getElementById("IsActive");
+            var deactivationWarning = document.getElementById("deactivationWarning");
+            var initiallyActive = @Model.IsActive.ToString().ToLowerInvariant();
+
+            if (!roleSelect || !tenantField || !tenantSelect) return;
+
+            var isProductManagerUser = @User.IsInRole(RoleNames.ProductManager).ToString().ToLowerInvariant();
+
+            function updateTenantField() {
+                var roleName = roleSelect.options[roleSelect.selectedIndex]?.text || "";
+                var needsTenant = roleName === "CompanyManager" || roleName === "CompanyUser";
+                var needsProducts = roleName === "SupportSpecialist" || (!isProductManagerUser && roleName === "ProductManager");
+                if (specialistProductAssignmentsField) specialistProductAssignmentsField.classList.toggle("d-none", roleName !== "ProductManager");
+                if (productAssignmentsLabel) {
+                    productAssignmentsLabel.textContent = roleName === "SupportSpecialist"
+                        ? "İlgilendiği Ürünler"
+                        : "Yöneticisi Olduğu Ürünler";
+                }
+                tenantField.classList.toggle("d-none", !needsTenant);
+                tenantSelect.disabled = !needsTenant;
+                if (!needsTenant) tenantSelect.value = "";
+                if (productAssignmentsField) {
+                    productAssignmentsField.classList.toggle("d-none", !needsProducts);
+                    productCheckboxes.forEach(function (checkbox) {
+                        checkbox.disabled = !needsProducts;
+                    });
+                    if (!needsProducts && productAssignmentsError) {
+                        productAssignmentsError.textContent = "";
+                    }
+                }
+            }
+
+            function validateProductAssignments() {
+                var roleName = roleSelect.options[roleSelect.selectedIndex]?.text || "";
+                var hasSelectedProduct = Array.prototype.some.call(productCheckboxes, function (checkbox) {
+                    return checkbox.checked;
+                });
+                var requiresProducts = roleName === "SupportSpecialist" || (!isProductManagerUser && roleName === "ProductManager");
+                var isValid = !requiresProducts || hasSelectedProduct;
+                if (productAssignmentsError) {
+                    productAssignmentsError.textContent = isValid
+                        ? ""
+                        : "En az bir ürün seçiniz.";
+                }
+                return isValid;
+            }
+
+            function updateDeactivationWarning() {
+                var roleName = roleSelect.options[roleSelect.selectedIndex]?.text || "";
+                var isSupportRole = roleName === "ProductManager" || roleName === "SupportSpecialist";
+                deactivationWarning?.classList.toggle(
+                    "d-none",
+                    !initiallyActive || activeCheckbox?.checked !== false || !isSupportRole);
+            }
+
+            productCheckboxes.forEach(function (checkbox) {
+                checkbox.addEventListener("change", validateProductAssignments);
+            });
+            form.addEventListener("submit", function (event) {
+                if (!validateProductAssignments()) {
+                    event.preventDefault();
+                    productAssignmentsField?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            });
+
+            roleSelect.addEventListener("change", updateTenantField);
+            roleSelect.addEventListener("change", updateDeactivationWarning);
+            activeCheckbox?.addEventListener("change", updateDeactivationWarning);
+            updateTenantField();
+            updateDeactivationWarning();
+        });
+    </script>
+}

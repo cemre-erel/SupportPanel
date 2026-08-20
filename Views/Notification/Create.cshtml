@@ -1,0 +1,81 @@
+@model SupportPanel.Models.SendNotificationViewModel
+
+<h2 class="page-title">Yeni Bildirim</h2>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Yeni Bildirim</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="RecipientType" class="form-label">Alıcı Türü</label>
+                    <select asp-for="RecipientType" class="form-select" id="recipientType">
+                        <option value="Kullanıcı">Kullanıcı</option>
+                        <option value="Rol">Rol</option>
+                    </select>
+                    <span asp-validation-for="RecipientType" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="UserId" class="form-label">Kullanıcı</label>
+                    <select asp-for="UserId"
+                            asp-items="@(new SelectList(ViewBag.Users, "Id", "Email"))"
+                            class="form-select"
+                            id="userIdSelect">
+                        <option value="">Seçiniz</option>
+                    </select>
+                    <span asp-validation-for="UserId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="RoleName" class="form-label">Rol</label>
+                    <select asp-for="RoleName"
+                            asp-items="@(new SelectList(ViewBag.Roles, "Name", "Name"))"
+                            class="form-select"
+                            id="roleSelect">
+                        <option value="">Seçiniz</option>
+                    </select>
+                    <span asp-validation-for="RoleName" class="text-danger"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Message" class="form-label">Mesaj</label>
+                    <textarea asp-for="Message" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Message" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+                <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var type = document.getElementById('recipientType');
+            var userSelect = document.getElementById('userIdSelect');
+            var roleSelect = document.getElementById('roleSelect');
+
+            function toggle() {
+                if (!type || !userSelect || !roleSelect) return;
+                var isUser = type.value === 'Kullanıcı';
+                userSelect.closest('.col-md-6').style.display = isUser ? '' : 'none';
+                roleSelect.closest('.col-md-6').style.display = isUser ? 'none' : '';
+            }
+
+            if (type) {
+                type.addEventListener('change', toggle);
+                toggle();
+            }
+        })();
+    </script>
+}

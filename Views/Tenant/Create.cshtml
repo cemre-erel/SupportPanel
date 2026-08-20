@@ -1,0 +1,52 @@
+﻿@model SupportPanel.Models.Tenant
+
+<h2 class="page-title">Yeni Firma</h2>
+
+<div class="card">
+    <div class="card-header">Yeni Firma</div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="CompanyName" class="form-label">Firma Adı</label>
+                <input asp-for="CompanyName" class="form-control" />
+                <span asp-validation-for="CompanyName" class="text-danger small fw-bold"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ContactName" class="form-label">İletişim Kişisi</label>
+                <input asp-for="ContactName" class="form-control" />
+                <span asp-validation-for="ContactName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">E-posta</label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small fw-bold"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Phone" class="form-label">Telefon</label>
+                <input asp-for="Phone" class="form-control" />
+                <span asp-validation-for="Phone" class="text-danger small fw-bold"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SLACalculationMethod" class="form-label">SLA Hesaplama Yöntemi</label>
+                <select asp-for="SLACalculationMethod"
+                        asp-items="Html.GetEnumSelectList<SlaCalculationMethod>()"
+                        class="form-select">
+                </select>
+                <span asp-validation-for="SLACalculationMethod" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

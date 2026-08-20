@@ -1,0 +1,129 @@
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@using SupportPanel.Models
+@model SupportPanel.Models.Ticket
+
+<form asp-action="Create" method="post" enctype="multipart/form-data" novalidate>
+    @if (!string.IsNullOrEmpty(ViewBag.FileError as string))
+    {
+        <div class="alert alert-danger">@ViewBag.FileError</div>
+    }
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Yeni Talep</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Başlık</label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Açıklama</label>
+                        <textarea asp-for="Description" class="form-control" rows="5"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Firma</label>
+                        <input type="text" class="form-control" value="@ViewBag.CurrentTenantName" disabled />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ProductId" class="form-label">Ürün</label>
+                        <select asp-for="ProductId" asp-items="@(new SelectList(ViewBag.Products, "Id", "Name"))" class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label">Kategori</label>
+                        <select asp-for="CategoryId" asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))" class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Priority" class="form-label">Öncelik</label>
+                        <select asp-for="Priority" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Low">Düşük</option>
+                            <option value="Medium">Orta</option>
+                            <option value="High">Yüksek</option>
+                            <option value="Critical">Kritik</option>
+                        </select>
+                        <span asp-validation-for="Priority" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SlaLevelId" class="form-label">SLA Seviyesi</label>
+                        <select asp-for="SlaLevelId" asp-items="@(new SelectList(ViewBag.SlaLevels, "Id", "Name"))" class="form-select">
+                            <option value="">Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="SlaLevelId" class="text-danger"></span>
+                    </div>
+                </div>
+
+
+                <div class="col-12">
+                    <div class="mb-3">
+                        <label class="form-label">Dosya (opsiyonel)</label>
+                        <input type="file" name="File" id="fileInput" class="form-control" />
+                        <div id="fileValidationMessage" class="mt-1 text-danger fw-bold" style="font-size: 0.8rem;" role="alert"></div>
+                        <div class="form-text text-muted">En fazla 20 MB. İzin verilen türler: jpg, jpeg, png, gif, webp, pdf, doc, docx, xls, xlsx, txt, zip, log</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white" style="border-top: 1px solid #E8EBEF;">
+            <button type="submit" id="submitBtn" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip', '.log'];
+            var input = document.getElementById('fileInput');
+            var validationMessage = document.getElementById('fileValidationMessage');
+            if (!input) return;
+            input.addEventListener('change', function () {
+                validationMessage.textContent = '';
+                var file = input.files && input.files[0];
+                if (!file) return;
+                var ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (allowed.indexOf(ext) === -1) {
+                    validationMessage.textContent = 'Bu dosya türü desteklenmiyor. Lütfen izin verilen dosya türlerinden birini seçin.';
+                    input.value = '';
+                    return;
+                }
+                if (file.size > 20 * 1024 * 1024) {
+                    validationMessage.textContent = 'Seçtiğiniz dosya 20 MB sınırını aşıyor. Lütfen daha küçük bir dosya seçin.';
+                    input.value = '';
+                }
+            });
+        })();
+        (function() {
+            var form = document.querySelector('form');
+            var submitBtn = document.getElementById('submitBtn');
+            if (!form || !submitBtn) return;
+            form.addEventListener('submit', function() {
+                if (form.checkValidity && !form.checkValidity()) {
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Kaydediliyor...';
+            });
+        })();
+    </script>
+}

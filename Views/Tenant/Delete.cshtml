@@ -1,0 +1,42 @@
+﻿@model SupportPanel.Models.Tenant
+
+<h2 class="page-title">Firmayı Pasifleştir</h2>
+
+<div class="card">
+    <div class="card-header">Firmayı Pasifleştir</div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            Bu firma pasif duruma alınacaktır. Talepler ve kullanıcılar silinmeyecektir, ancak firma kullanıcılarının girişi engellenir.
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Firma Adı</dt>
+            <dd class="col-sm-9">@Model.CompanyName</dd>
+
+            <dt class="col-sm-3">İletişim Kişisi</dt>
+            <dd class="col-sm-9">@Model.ContactName</dd>
+
+            <dt class="col-sm-3">E-posta</dt>
+            <dd class="col-sm-9">@Model.Email</dd>
+
+            <dt class="col-sm-3">Telefon</dt>
+            <dd class="col-sm-9">@Model.Phone</dd>
+
+            <dt class="col-sm-3">SLA Hesaplama Yöntemi</dt>
+            <dd class="col-sm-9">
+                @(Model.SLACalculationMethod == SlaCalculationMethod.WorkingHours
+                    ? "Çalışma Saatleri"
+                    : "7x24")
+            </dd>
+        </dl>
+
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" novalidate>
+            <button type="submit" class="btn btn-danger">Pasifleştir</button>
+            <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

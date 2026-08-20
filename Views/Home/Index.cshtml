@@ -1,0 +1,119 @@
+﻿@model SupportPanel.ViewModels.HomeDashboardViewModel
+@{
+    ViewData["Title"] = "Genel Bakış";
+}
+
+<h2 class="page-title">Genel Bakış</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #003DA5;">@Model.TotalTickets</div>
+                <div class="text-muted small">Toplam Talep</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #007AFF;">@Model.NewTickets</div>
+                <div class="text-muted small">Yeni</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #6D5EF0;">@Model.AssignedTickets</div>
+                <div class="text-muted small">Atandı</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #997404;">@Model.InReviewTickets</div>
+                <div class="text-muted small">İnceleniyor</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #FD7E14;">@Model.WaitingCustomerTickets</div>
+                <div class="text-muted small">Müşteri Bekleniyor</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #2CBC63;">@Model.ResolvedTickets</div>
+                <div class="text-muted small">Çözüldü</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #6C757D;">@Model.ClosedTickets</div>
+                <div class="text-muted small">Kapatıldı</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #DC3545;">@Model.CancelledTickets</div>
+                <div class="text-muted small">İptal Edildi</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="color: #DC3545;">@Model.CriticalTickets</div>
+                <div class="text-muted small">Kritik Öncelik</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Son Talepler</div>
+    <div class="card-body">
+        @if (Model.RecentTickets.Any())
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Başlık</th>
+                        <th>Firma</th>
+                        <th>Öncelik</th>
+                        <th>Durum</th>
+                        <th>Oluşturulma</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.RecentTickets)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-controller="Ticket" asp-route-id="@item.Id">@item.Title</a>
+                            </td>
+                            <td>@item.Tenant?.CompanyName</td>
+                            <td>@await Html.PartialAsync("_PriorityBadge", item.Priority)</td>
+                            <td>@await Html.PartialAsync("_StatusBadge", item.Status)</td>
+                            <td>@item.CreatedDate.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted mb-0">Henüz talep bulunmuyor.</p>
+        }
+    </div>
+</div>

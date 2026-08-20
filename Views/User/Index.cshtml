@@ -1,0 +1,171 @@
+﻿@model IEnumerable<SupportPanel.Models.User>
+
+@{
+    var isSupportTeam = ViewBag.IsSupportTeam == true;
+    var productAssignments = ViewBag.ProductAssignments as Dictionary<int, List<SupportPanel.Models.UserProduct>>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">@(isSupportTeam ? "Destek Ekibi" : "Kullanıcı Listesi")</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        Yeni Kullanıcı
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="@(isSupportTeam ? "col-md-6" : "col-12")">
+                <label for="userSearch" class="form-label">@(isSupportTeam ? "Destek Ekibinde Ara" : "Kullanıcı Ara")</label>
+                <input type="search" id="userSearch" class="form-control" placeholder="Ad veya soyad yazınız..." autocomplete="off" />
+            </div>
+            @if (isSupportTeam)
+            {
+                <div class="col-md-3">
+                    <label for="roleFilter" class="form-label">Rol</label>
+                    <select id="roleFilter" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="ProductManager">Ürün Yöneticisi</option>
+                        <option value="SupportSpecialist">Destek Uzmanı</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="statusFilter" class="form-label">Durum</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="active">Aktif</option>
+                        <option value="passive">Pasif</option>
+                    </select>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<table class="table table-hover align-middle" id="userTable">
+    <thead class="table-light">
+        <tr>
+            <th>Ad</th>
+            <th>Soyad</th>
+            <th>E-posta</th>
+            <th>Firma</th>
+            <th>Rol</th>
+            @if (isSupportTeam)
+            {
+                <th>Ürün Sorumlulukları</th>
+            }
+            <th>Aktif</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-user-name="@($"{item.FirstName} {item.LastName}".ToLowerInvariant())"
+                data-role="@(item.Role?.Name ?? "")"
+                data-status="@(item.IsActive ? "active" : "passive")">
+                <td>@item.FirstName</td>
+                <td>@item.LastName</td>
+                <td>@item.Email</td>
+                <td>@(item.Tenant?.CompanyName ?? "-")</td>
+                <td>@(item.Role?.Name ?? "-")</td>
+                @if (isSupportTeam)
+                {
+                    <td>
+                        @if (productAssignments != null && productAssignments.TryGetValue(item.Id, out var assignments))
+                        {
+                            foreach (var assignment in assignments)
+                            {
+                                var responsibility = assignment.IsProductManager && assignment.IsSupportSpecialist
+                                    ? "Yönetici ve uzman"
+                                    : assignment.IsProductManager ? "Ürün yöneticisi" : "Destek uzmanı";
+                                <span class="badge bg-light text-dark border me-1 mb-1">@assignment.Product?.Name · @responsibility</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">Atanmamış</span>
+                        }
+                    </td>
+                }
+                <td>
+                    @if (item.IsActive)
+                    {
+                        <span class="badge bg-success">Aktif</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Pasif</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit"
+                       asp-route-id="@item.Id"
+                       asp-route-returnTo="@(isSupportTeam ? "support-team" : null)"
+                       class="btn btn-warning btn-sm">
+                        Düzenle
+                    </a>
+                    @if (item.IsActive)
+                    {
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Pasifleştir</a>
+                    }
+                    else
+                    {
+                        <form asp-action="Activate" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            @if (isSupportTeam)
+                            {
+                                <input type="hidden" name="returnTo" value="support-team" />
+                            }
+                            <button type="submit" class="btn btn-success btn-sm">Aktifleştir</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div id="userEmptyState" class="alert alert-light text-muted text-center d-none">
+    Kullanıcı bulunamadı.
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var searchInput = document.getElementById("userSearch");
+        var rows = Array.prototype.slice.call(
+            document.querySelectorAll("#userTable tbody tr"));
+        var emptyState = document.getElementById("userEmptyState");
+        var roleFilter = document.getElementById("roleFilter");
+        var statusFilter = document.getElementById("statusFilter");
+
+        function normalize(value) {
+            return (value || "").toLocaleLowerCase("tr-TR").trim();
+        }
+
+        function filterUsers() {
+            var query = normalize(searchInput.value);
+            var selectedRole = roleFilter?.value || "";
+            var selectedStatus = statusFilter?.value || "";
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var fullName = normalize(row.getAttribute("data-user-name"));
+                var matchesName = !query || fullName.indexOf(query) !== -1;
+                var matchesRole = !selectedRole || row.getAttribute("data-role") === selectedRole;
+                var matchesStatus = !selectedStatus || row.getAttribute("data-status") === selectedStatus;
+                var visible = matchesName && matchesRole && matchesStatus;
+                row.classList.toggle("d-none", !visible);
+                if (visible) {
+                    visibleCount++;
+                }
+            });
+
+            emptyState.classList.toggle("d-none", visibleCount !== 0);
+        }
+
+        searchInput.addEventListener("input", filterUsers);
+        roleFilter?.addEventListener("change", filterUsers);
+        statusFilter?.addEventListener("change", filterUsers);
+    });
+</script>
